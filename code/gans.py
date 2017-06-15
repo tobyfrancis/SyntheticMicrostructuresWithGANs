@@ -1,6 +1,8 @@
 from keras.layers.pooling import GlobalMaxPooling3D, GlobalAveragePooling3D
 import keras.backend as K
 from loading import *
+from discriminator import *
+from generator import *
 from lambdas import *
 
 ''' 
@@ -14,8 +16,6 @@ from lambdas import *
 	The concatenation of a random vector provides a stochastic output, 
 	given a fixed set of microstructural statistics, which is useful
 	for the creation of a multitude of representative microstructures.
-
-	
 '''
 def G_Max(y_true,y_predict):
 	#Maximizes crossentropy by Minimizing negative crossentropy
@@ -24,35 +24,9 @@ def G_Max(y_true,y_predict):
 def set_trainable(model,trainable):
 	for layer in model.layers:
 		layer.trainable = False
-
-def discriminator(optimizer):
-	'''Given a 3D Microstructure, output if Experimental or Synthetic'''
-	model = Sequential()
-	model.add(Conv3D(16,3))
-	model.add(Conv3D(32,3,strides=(2,2,2)))
-	model.add(Conv3D(64,3,strides=(2,2,2)))
-	model.add(Conv3D(128,3,strides=(2,2,2)))
-	model.add(Conv3D(128,3,strides=(2,2,2)))
-	model.add(Conv3D(2,3))
-	model.add(GlobalMaxPooling3D(data_format='channels_last'))
-	model.add(Activation('softmax'))
-	model.compile(optimizer=optimizer,loss='categorical_crossentropy')
-
-def generator(optimizer):
-	'''Given a statistics vector, output microstructure'''
-	model = Sequential()
-	model.add(Conv1D(5*5*5,3,padding='same',activation='relu'))
-	model.add(Lambda(transpose,output_shape=transposed_shape))
-	model.add(Reshape(5,5,5,16+odf_length))
-	model.add(DeConv3D(2,128,activation='relu'))
-	model.add(DeConv3D(2,64,activation='relu'))
-	model.add(DeConv3D(2,32,activation='relu'))
-	model.add(DeConv3D(2,16,activation='relu'))
-	model.add(Conv3D(4,(3,3,3),trainable=False))
-	model.compile(optimizer=optimizer,loss='mse')
 	
-def gan(D,G,optimizer):
-	inputs = Input(shape=)
+def gan(D,G,optimizer,stats_shape):
+	inputs = Input(shape = stats_shape)
 	set_trainable(G,True)
 	X = G(inputs[0])
 	X = Concatenate(X,inputs[1])
@@ -64,13 +38,12 @@ def gan(D,G,optimizer):
 def train_switch(D,G):
 	if both_trainable(D,G):
 		set_trainable(G,False)
+	elif G.trainable == True:
+		set_trainable(G,False)
+		set_trainable(D,True)
 	else:
-		if D.trainable == True:
-			set_trainable(D,False)
-			set_trainable(G,True)
-		else:
-			set_trainable(G,False)
-			set_trainable(D,True)
+		set_trainable(D,False)
+		set_trainable(G,True)
 
 def train_gan(D,G,folder,optimizer='adagrad'):
 	GAN = gan(D,G)
@@ -78,13 +51,15 @@ def train_gan(D,G,folder,optimizer='adagrad'):
 	D_loss_tracking = []
 	G_loss_tracking = []
 
+	dataset = pre_process(dataset)
+
 	minmax = False
 	minmax_switch = 0
 	epochs = 10000
 
 	print('Training GANs model...')
 	for epoch in range(epochs):
-		x = load_microstructure_batch(G,folder)
+		x = load_microstructure_batch(G,dataset)
 		train_switch(D,G)
 		#TODO: When I get the data, write the generate_batch code
 		D_x,D_y = generate_D_batch(G,x)
