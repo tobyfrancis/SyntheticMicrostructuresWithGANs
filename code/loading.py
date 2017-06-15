@@ -25,7 +25,7 @@ def load_quats(filename,sym):
     
     shape = dataset.shape
     dataset = dataset.reshape(-1,4)
-    staged_fzQu = fuzQu(sym)
+    staged_fzQu = fuZqu(sym)
     dataset = np.array(list(map(staged_fzQu,dataset)))
     gc.collect()
     return dataset.reshape(shape) 
