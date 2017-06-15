@@ -44,13 +44,16 @@ def random_rotation(dataset):
     lmn = np.hstack((np.zeros((len(lmn),1)),lmn))
     np.apply_along_axis(rotate(q),v)
 
-
+# TODO:
+'''
     ''' Crop rotated dataset '''
 def crop(dataset,quality_map):
 
     
-
+    ''' Load training batch '''
 def load_batch(dataset):
+
+'''
 
 ''' 
     Footnote 1:
