@@ -1,29 +1,39 @@
 import numpy as np
 import h5py
+import crystallography as xtal
 
-quaternion_symmetry =   [
-                            []
-                        ]
-    
-def same_zone(first_quat,second_quat):
-    ''' 
-        We first compute the misorientation between the two quaternions, which is a quaternion.
-        
-    '''
-    compute_misorientation(first_quat,second_quat)
+def fuZqu(sym):
+    def fzQu(quat):
+        quat = xtal.do2qu(quat)
+        fZquat = sym.fzQu(quat)
+        return xtal.qu2do(fZquat)
+    return fzQu
 
-def load_quats(f):
-    dataset = np.array(f['DataContainers']['ImageDataContainer']['CellData']['Quats'],dtype='float32')
+def rotate(q):
+    def rot(v):
+        v = xtal.do2qu(v)
+        return np.array(xtal.qu2do(q*v*q.conjugate()))
+    return rot
+
+def load_quats(f,sym):
+    dataset = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
+    dataset = np.array(dataset,dtype='float32')
     dataset = dataset[:,33:461,27:797] #Reference Footnote 1
-    return pre_process(dataset)
-
-def pre_process(dataset):
-    ''' Transforms all quaternions so as to lie in one fundamental zone '''
-    first_quat = dataset[0,0,0]
-    not_same = list(zip(*np.where(not same_zone(dataset,fundamental_zone))))
+    return np.apply_along_axis(fuZqu(sym),-1,dataset)    
     
 def random_rotation(dataset):
     ''' Perform random rotation on dataset '''
+    rot = xtal.cu2qu(xtal.randomOrientations(1))
+    
+    i,j,k = np.expand_dims(np.indices(dataset.shape[:-1]),1)
+    l,m,n = np.expand_dims(np.indices(dataset.shape[:-1]),1)
+    ijk,lmn = np.vstack((i,j,k)),np.vstack((l,m,n))
+    ijk,lmn = np.rollaxis(ijk,0,4),np.rollaxis(lmn,0,4)
+    ijk,lmn = ijk.reshape(-1,3),lmn.reshape(-1,3)
+
+    lmn = np.hstack((np.zeros((len(lmn),1)),lmn))
+    np.apply_along_axis
+
 
 def crop(dataset,quality_map):
     ''' Crop rotated dataset '''
@@ -31,11 +41,10 @@ def crop(dataset,quality_map):
 
 def load_batch(dataset):
 
-
 ''' 
     Footnote 1:
-    The hard-coded crop here was determined using Paraview for  the IPF Color Magnitude
-    IPF Magnitude:
+    The hard-coded crop here was determined using Paraview
+    by IPF Magnitude:
         X: 27 - 796
         Y: 33 - 460
         Z: 0 - 199
