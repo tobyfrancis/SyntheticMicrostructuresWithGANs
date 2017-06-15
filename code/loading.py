@@ -1,6 +1,7 @@
 import numpy as np
 import h5py
 import crystallography as xtal
+import gc
 
 def fuZqu(sym):
     def fzQu(quat):
@@ -15,16 +16,25 @@ def rotate(q):
         return np.array(xtal.qu2do(q*v*q.conjugate()))
     return rot
 
-def load_quats(f,sym):
+''' sym = xtal.Symmetry('Cubic') '''
+def load_quats(filename,sym):
+    f = h5py.File(filename)
     dataset = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
     dataset = np.array(dataset,dtype='float32')
     dataset = dataset[:,33:461,27:797] #Reference Footnote 1
-    return np.apply_along_axis(fuZqu(sym),-1,dataset)    
+    
+    shape = dataset.shape
+    dataset = dataset.reshape(-1,4)
+    staged_fzQu = fuzQu(sym)
+    dataset = np.array(list(map(staged_fzQu,dataset)))
+    gc.collect()
+    return dataset.reshape(shape) 
     
 def random_rotation(dataset):
     ''' Perform random rotation on dataset '''
     rot = xtal.cu2qu(xtal.randomOrientations(1))
-    
+    center = dataset.shape
+
     i,j,k = np.expand_dims(np.indices(dataset.shape[:-1]),1)
     l,m,n = np.expand_dims(np.indices(dataset.shape[:-1]),1)
     ijk,lmn = np.vstack((i,j,k)),np.vstack((l,m,n))
@@ -32,12 +42,13 @@ def random_rotation(dataset):
     ijk,lmn = ijk.reshape(-1,3),lmn.reshape(-1,3)
 
     lmn = np.hstack((np.zeros((len(lmn),1)),lmn))
-    np.apply_along_axis
+    np.apply_along_axis(rotate(q),v)
 
 
-def crop(dataset,quality_map):
     ''' Crop rotated dataset '''
-    bad_quality = np.where(quality == 0.0)
+def crop(dataset,quality_map):
+
+    
 
 def load_batch(dataset):
 
