@@ -46,11 +46,11 @@ def random_rotation(dataset):
 
 # TODO:
 '''
-    ''' Crop rotated dataset '''
+    Crop rotated dataset
 def crop(dataset,quality_map):
 
     
-    ''' Load training batch '''
+    Load training batch
 def load_batch(dataset):
 
 '''
