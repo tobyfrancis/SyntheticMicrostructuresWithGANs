@@ -45,9 +45,10 @@ def load_quats(filename,sym):
     voxel_dict = np.hstack((voxel_ids,voxel_quats))
     cluster_dict = np.hstack((cluster_ids,cluster_quats))
 
-    voxels = pd.DataFrame(voxel_dict,index=voxel_ids,columns=columns)
-    clusters = pd.DataFrame(cluster_dict,index=cluster_ids,columns=columns)
-    quats = voxels.update(clusters).value
+    voxels = pd.DataFrame(voxel_dict,columns=columns)
+    clusters = pd.DataFrame(cluster_dict,columns=columns)
+    voxels.update(clusters)
+    dataset = np.array(voxels.values[:,1:],dtype='float32')
     
     del voxel_quats
     del voxel_ids
@@ -58,7 +59,7 @@ def load_quats(filename,sym):
     del voxels
     del clusters
     gc.collect()
-    return quats.reshape(shape)
+    return dataset.reshape(shape)
     
 def random_rotation(dataset):
     ''' Perform random rotation on dataset '''
