@@ -1,7 +1,11 @@
 import numpy as np
 import h5py
 import crystallography as xtal
+import pandas as pd
 import gc
+
+from scipy.spatial import KDTree
+
 
 def fuZqu(sym):
     def fzQu(quat):
@@ -15,20 +19,46 @@ def rotate(q):
         v = xtal.do2qu(v)
         return np.array(xtal.qu2do(q*v*q.conjugate()))
     return rot
-
+        
 ''' sym = xtal.Symmetry('Cubic') '''
 def load_quats(filename,sym):
     f = h5py.File(filename)
-    dataset = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
-    dataset = np.array(dataset,dtype='float32')
-    dataset = dataset[:,33:461,27:797] #Reference Footnote 1
+    voxel_quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
+    voxel_ids = f['DataContainers']['ImageDataContainer']['CellData']['ClusterIds']
+    cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
+    cluster_ids = f['DataContainers']['ImageDataContainer']['CellFeatureData']['ClusterIds']
+
+    voxel_quats,voxel_ids = np.array(voxel_quats,dtype='float32'),np.array(voxel_ids,dtype=int)
+    cluster_quats,cluster_ids = np.array(cluster_quats,dtype='float32'),np.array(cluster_ids,dtype=int)
+    shape = voxel_quats.shape
+
+    voxel_quats,voxel_ids = voxel_quats.reshape(-1,4),voxel_ids.reshape(-1,1)
+    cluster_quats = cluster_quats.reshape(-1,4)
+    voxel_quats,cluster_quats = np.roll(voxel_quats,-1,1),np.roll(cluster_quats,-1,1) #Footnote 1
     
-    shape = dataset.shape
-    dataset = dataset.reshape(-1,4)
-    staged_fzQu = fuZqu(sym)
-    dataset = np.array(list(map(staged_fzQu,dataset)))
+    fzQu = fuZqu(sym) #stage fundamental zone function by symmetry
+    cluster_quats = np.array(list(map(fzQu,cluster_quats)))
+    cluster_quats = cluster_quats.reshape(-1,4)
+
+    columns = ['clusterId','w','x','y','z']
+
+    voxel_dict = np.hstack((voxel_ids,voxel_quats))
+    cluster_dict = np.hstack((cluster_ids,cluster_quats))
+
+    voxels = pd.DataFrame(voxel_dict,index=voxel_ids,columns=columns)
+    clusters = pd.DataFrame(cluster_dict,index=cluster_ids,columns=columns)
+    quats = voxels.update(clusters).value
+    
+    del voxel_quats
+    del voxel_ids
+    del cluster_quats
+    del cluster_ids
+    del voxel_dict
+    del cluster_dict
+    del voxels
+    del clusters
     gc.collect()
-    return dataset.reshape(shape) 
+    return quats.reshape(shape)
     
 def random_rotation(dataset):
     ''' Perform random rotation on dataset '''
@@ -57,19 +87,13 @@ def load_batch(dataset):
 
 ''' 
     Footnote 1:
-    The hard-coded crop here was determined using Paraview
-    by IPF Magnitude:
-        X: 27 - 796
-        Y: 33 - 460
-        Z: 0 - 199
+    DREAM3D stores quaternions as [x,y,z,w], we change this to [w,x,y,z]
+    for the xtal library.
 
     Footnote 2:
-    DREAM3D stores quaternions as [x,y,z,w], we change this to [w,x,y,z]
-
-    Footnote 3:
     Given n (xi+yj+zk) and w (a rotation), q = cos(w/2) + sin(w/2)*n 
 
-    Footnote 4:
+    Footnote 3:
     Symmetry operators are pure quaternions, they do not rotate around the axis.
 
 ''' 

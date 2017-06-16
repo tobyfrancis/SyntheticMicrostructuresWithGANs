@@ -23,7 +23,7 @@ def G_Max(y_true,y_predict):
 
 def set_trainable(model,trainable):
 	for layer in model.layers:
-		layer.trainable = False
+		layer.trainable = trainable
 	
 def gan(D,G,optimizer,stats_shape):
 	inputs = Input(shape = stats_shape)
