@@ -6,8 +6,9 @@ import gc
 
 def rotate(dataset,big_center,small_center,wlh,rotation_matrix):
     def rot(index):
-        ijk = small_center - np.matrix(np.unravel_index(index,wlh)).reshape(3,1)   
-        hkl = np.array(np.round(big_center + rotation_matrix*ijk),dtype=int)
+        ijk = small_center - np.matrix(np.unravel_index(index,wlh)).reshape(1,3)   
+        hkl = np.array(np.round(big_center + ijk*rotation_matrix),dtype=int).reshape(1,3)
+        print(hlk)
         return dataset[hkl]
 
     return rot
@@ -69,8 +70,8 @@ def random_rotated_cube(dataset):
 
     index_array = np.arange(a**3)
 
-    small_center = np.matrix(wlh/2).reshape(3,1) #center of inner cube
-    big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(1,3)
+    small_center = np.matrix(wlh/2).reshape(1,3) #center of inner cube
+    big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(3,1)
     rot_func = rotate(dataset,big_center,small_center,wlh,rotation_matrix)
     return np.array(list(map(rot_func,index_array))).reshape(wlh[0],wlh[1],wlh[2],4)
 
