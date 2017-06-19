@@ -1,5 +1,6 @@
 def discriminator(optimizer):
-	'''Given a 3D Microstructure, output if Experimental or Synthetic'''
+	''' Given a 3D Microstructure of any shape, 
+		output if Experimental or Synthetic'''
 	model = Sequential()
 	model.add(Conv3D(16,3))
 	model.add(Conv3D(32,3,strides=(2,2,2)))

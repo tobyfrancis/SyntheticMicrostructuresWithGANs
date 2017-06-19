@@ -4,8 +4,13 @@ import crystallography as xtal
 import pandas as pd
 import gc
 
-from scipy.spatial import KDTree
+def rotate(dataset,big_center,small_center,rot):
+    def rot(index):
+        ijk = small_center - np.matrix(np.unravel_index(index,(w,l,h))).reshape(3,1)   
+        hkl = np.array(np.round(big_center - rot*ijk),dtype=int)
+        return dataset[hkl]
 
+    return rot
 
 def fuZqu(sym):
     def fzQu(quat):
@@ -14,12 +19,6 @@ def fuZqu(sym):
         return xtal.qu2do(fZquat)
     return fzQu
 
-def rotate(q):
-    def rot(v):
-        v = xtal.do2qu(v)
-        return np.array(xtal.qu2do(q*v*q.conjugate()))
-    return rot
-        
 ''' sym = xtal.Symmetry('Cubic') '''
 def load_quats(filename,sym):
     f = h5py.File(filename)
@@ -45,8 +44,8 @@ def load_quats(filename,sym):
     voxel_dict = np.hstack((voxel_ids,voxel_quats))
     cluster_dict = np.hstack((cluster_ids,cluster_quats))
 
-    voxels = pd.DataFrame(voxel_dict,columns=columns)
-    clusters = pd.DataFrame(cluster_dict,columns=columns)
+    voxels = pd.DataFrame(voxel_dict,columns=columns,index=list(voxel_ids.flatten()))
+    clusters = pd.DataFrame(cluster_dict,columns=columns,index=list(cluster_ids.flatten()))
     voxels.update(clusters)
     dataset = np.array(voxels.values[:,1:],dtype='float32')
     
@@ -60,25 +59,24 @@ def load_quats(filename,sym):
     del clusters
     gc.collect()
     return dataset.reshape(shape)
-    
-def random_rotation(dataset):
-    ''' Perform random rotation on dataset '''
-    rot = xtal.cu2qu(xtal.randomOrientations(1))
-    center = dataset.shape
 
-    i,j,k = np.expand_dims(np.indices(dataset.shape[:-1]),1)
-    l,m,n = np.expand_dims(np.indices(dataset.shape[:-1]),1)
-    ijk,lmn = np.vstack((i,j,k)),np.vstack((l,m,n))
-    ijk,lmn = np.rollaxis(ijk,0,4),np.rollaxis(lmn,0,4)
-    ijk,lmn = ijk.reshape(-1,3),lmn.reshape(-1,3)
+def random_rotated_cube(dataset):
+    rot = xtal.cu2om(xtal.randomOrientations(1))
 
-    lmn = np.hstack((np.zeros((len(lmn),1)),lmn))
-    np.apply_along_axis(rotate(q),v)
+    d = min(dataset.shape[0],dataset.shape[1],dataset.shape[2]) #diameter of sphere in prism
+    a = 2*np.sqrt(d**2/12) #inner cube dimension
+    wlh = np.array([int(a),int(a),int(a)])
+
+    index_array = np.arange(wlh[0]*wlh[1]*wlh[2])
+
+    small_center = np.matrix(wlh/2).reshape(3,1) #center of inner cube
+    big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(1,3)
+    rot_func = rotate(dataset,big_center,small_center,rot)
+    return np.array(list(map(rot_func,index_array))).reshape(wlh[0],wlh[1],wlh[2],4)
 
 # TODO:
 '''
-    Crop rotated dataset
-def crop(dataset,quality_map):
+
 
     
     Load training batch
@@ -97,4 +95,10 @@ def load_batch(dataset):
     Footnote 3:
     Symmetry operators are pure quaternions, they do not rotate around the axis.
 
+    Footnote 4:
+    The hard-coded crop here was determined using Paraview
+    by IPF Magnitude:
+        X: 27 - 796
+        Y: 33 - 460
+        Z: 0 - 199
 ''' 
