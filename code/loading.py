@@ -7,7 +7,7 @@ import gc
 def rotate(dataset,big_center,small_center,wlh,rotation_matrix):
     def rot(index):
         ijk = small_center - np.matrix(np.unravel_index(index,wlh)).reshape(3,1)   
-        hkl = np.array(np.round(big_center - rotation_matrix*ijk),dtype=int)
+        hkl = np.array(np.round(big_center + rotation_matrix*ijk),dtype=int)
         return dataset[hkl]
 
     return rot
@@ -61,13 +61,13 @@ def load_quats(filename,sym):
     return dataset.reshape(shape)
 
 def random_rotated_cube(dataset):
-    rotation_matrix = xtal.cu2om(xtal.randomOrientations(1))
+    rotation_matrix = xtal.cu2om(xtal.randomOrientations(1))[0]
 
     d = min(dataset.shape[0],dataset.shape[1],dataset.shape[2]) #diameter of sphere in prism
-    a = 2*np.sqrt(d**2/12) #inner cube dimension
-    wlh = np.array([int(a),int(a),int(a)])
+    a = int(2*np.sqrt(d**2/12)) #inner cube dimension
+    wlh = np.array([a,a,a])
 
-    index_array = np.arange(wlh[0]*wlh[1]*wlh[2])
+    index_array = np.arange(a**3)
 
     small_center = np.matrix(wlh/2).reshape(3,1) #center of inner cube
     big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(1,3)
