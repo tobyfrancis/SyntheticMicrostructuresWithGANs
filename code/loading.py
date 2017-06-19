@@ -4,9 +4,9 @@ import crystallography as xtal
 import pandas as pd
 import gc
 
-def rotate(dataset,big_center,small_center,rot):
+def rotate(dataset,big_center,small_center,wlh,rot):
     def rot(index):
-        ijk = small_center - np.matrix(np.unravel_index(index,(w,l,h))).reshape(3,1)   
+        ijk = small_center - np.matrix(np.unravel_index(index,wlh)).reshape(3,1)   
         hkl = np.array(np.round(big_center - rot*ijk),dtype=int)
         return dataset[hkl]
 
