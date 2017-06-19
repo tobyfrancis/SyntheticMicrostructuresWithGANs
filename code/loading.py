@@ -7,7 +7,7 @@ import gc
 def rotate(dataset,big_center,small_center,wlh,rotation_matrix):
     def rot(index):
         ijk = np.matrix(np.unravel_index(index,wlh)).reshape(3,1) - small_center
-        hkl = np.array(np.round(big_center + rotation_matrix*ijk),dtype=int)
+        hkl = np.array(np.round(big_center + np.linalg.inv(rotation_matrix)*ijk),dtype=int)
         return dataset[hkl]
 
     return rot
