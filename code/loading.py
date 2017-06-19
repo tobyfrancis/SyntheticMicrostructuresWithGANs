@@ -71,7 +71,7 @@ def random_rotated_cube(dataset):
 
     small_center = np.matrix(wlh/2).reshape(3,1) #center of inner cube
     big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(1,3)
-    rot_func = rotate(dataset,big_center,small_center,rot)
+    rot_func = rotate(dataset,big_center,small_center,wlh,rot)
     return np.array(list(map(rot_func,index_array))).reshape(wlh[0],wlh[1],wlh[2],4)
 
 # TODO:
