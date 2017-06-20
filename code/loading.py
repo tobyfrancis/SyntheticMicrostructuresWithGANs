@@ -75,9 +75,9 @@ def cube_stats(dataset,custom_size=96):
     index_array = np.arange(a**3)
     small_center = np.matrix(wlh/2).reshape(3,1)
     big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(3,1)
-    return shape,small_center,big_center,index_array
+    return [shape,small_center,big_center,index_array]
 
-def random_rotated_cube(dataset,(shape,small_center,big_center,index_array)):
+def random_rotated_cube(dataset,[shape,small_center,big_center,index_array]):
     rotation_matrix = xtal.cu2om(xtal.randomOrientations(1))[0]
     dataset_shape = np.array([dataset.shape[0],dataset.shape[1],dataset.shape[2]])
     padding = 25
