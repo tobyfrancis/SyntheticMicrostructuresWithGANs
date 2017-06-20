@@ -20,8 +20,10 @@ def fuZqu(sym):
     return fzQu
 
 ''' sym = xtal.Symmetry('Cubic') '''
-def load_quats(filename,sym):
+def load_quats(filename,symmetry):
+    fzQu = fuZqu(symmetry) #stage fundamental zone function by symmetry
     f = h5py.File(filename)
+
     voxel_quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
     voxel_ids = f['DataContainers']['ImageDataContainer']['CellData']['ClusterIds']
     cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
@@ -35,7 +37,6 @@ def load_quats(filename,sym):
     cluster_quats = cluster_quats.reshape(-1,4)
     voxel_quats,cluster_quats = np.roll(voxel_quats,-1,1),np.roll(cluster_quats,-1,1) #Footnote 1
     
-    fzQu = fuZqu(sym) #stage fundamental zone function by symmetry
     cluster_quats = np.array(list(map(fzQu,cluster_quats)))
     cluster_quats = cluster_quats.reshape(-1,4)
 
@@ -60,29 +61,42 @@ def load_quats(filename,sym):
     gc.collect()
     return dataset.reshape(shape)
 
-def random_rotated_cube(dataset):
-    rotation_matrix = xtal.cu2om(xtal.randomOrientations(1))[0]
+def cube_stats(dataset,custom_size=96):
+    d = min(dataset.shape[0],dataset.shape[1],dataset.shape[2])
+    a = int(2*np.sqrt(d**2/12))
+    if custom_size and custom_size <= a:
+        a = custom_size
+    elif custom_size and custom_size > a:
+        raise IndexError('Custom Size too big to ensure rotations will fit in dataset.')
+    else:
+        pass
 
-    d = min(dataset.shape[0],dataset.shape[1],dataset.shape[2]) #diameter of sphere in prism
-    a = int(2*np.sqrt(d**2/12)) #inner cube dimension
-    wlh = np.array([a,a,a])
-
+    shape = np.array([a,a,a])
     index_array = np.arange(a**3)
-
-    small_center = np.matrix(wlh/2).reshape(3,1) #center of inner cube
+    small_center = np.matrix(wlh/2).reshape(3,1)
     big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(3,1)
+    return shape,small_center,big_center,index_array
+
+def random_rotated_cube(dataset,(shape,small_center,big_center,index_array)):
+    rotation_matrix = xtal.cu2om(xtal.randomOrientations(1))[0]
+    dataset_shape = np.array([dataset.shape[0],dataset.shape[1],dataset.shape[2]])
+    padding = 25
+    centering = dataset_shape - min(dataset_shape)
+    for i in range(3):
+        shift = centering[i]-padding
+        if shift > 5: #just in case the padding makes things negative
+            big_center[i] += numpy.random.uniform(low=-shift, high=shift)
+
     rot_func = rotate(dataset,big_center,small_center,wlh,rotation_matrix)
-    return np.array(list(map(rot_func,index_array))).reshape(wlh[0],wlh[1],wlh[2],4)
 
-# TODO:
-'''
+    return np.array(list(map(rot_func,index_array))).reshape(shape[0],shape[1],shape[2],4)
 
-
-    
-    Load training batch
-def load_batch(dataset):
-
-'''
+def load_batch(dataset,batch_size,cube_stats):
+    shape = cube_stats[0]
+    batch = np.zeros(batch_size,shape[0],shape[1],shape[2],4)
+    for i in range(batch_size):
+        batch[i] = random_rotated_cube(dataset,cube_stats)
+    return batch
 
 ''' 
     Footnote 1:

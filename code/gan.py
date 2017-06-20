@@ -1,6 +1,5 @@
 from keras.layers.pooling import GlobalMaxPooling3D, GlobalAveragePooling3D
 import keras.backend as K
-from loading import *
 from discriminator import *
 from generator import *
 from lambdas import *
@@ -24,12 +23,27 @@ def G_Max(y_true,y_predict):
 def set_trainable(model,trainable):
 	for layer in model.layers:
 		layer.trainable = trainable
+
+def squeeze_3D(x):
+	return K.reshape(x.shape[1],x.shape[2])
+
+def squeeze_3Dshape(shape):
+	return (shape[1],shape[2])
+
+def squeeze_6D(x):
+	return K.reshape(x.shape[1],x.shape[2],x.shape[3],x.shape[4],x.shape[5])
+
+def squeeze_6Dshape(shape):
+	return (shape[1],shape[2],shape[3],shape[4],shape[5])
+
+def expand(x):
+	return
 	
-def gan(D,G,optimizer,stats_shape):
-	inputs = Input(shape = stats_shape)
+def gan(D,G,optimizer,a):
+	inputs = [Input(batch_shape=(1,8,16)),Input(batch_shape=(1,8,a,a,a,4))]
 	set_trainable(G,True)
 	X = G(inputs[0])
-	X = Concatenate(X,inputs[1])
+	X = merge(X,inputs[1],concat_axis=0)
 	set_trainable(D,False)
 	outputs = D(X)
 	model = Model(inputs=inputs,outputs=outputs)
@@ -44,46 +58,3 @@ def train_switch(D,G):
 	else:
 		set_trainable(D,False)
 		set_trainable(G,True)
-
-def train_gan(D,G,folder,optimizer='adagrad'):
-	GAN = gan(D,G)
-	epoch_tracking = []
-	D_loss_tracking = []
-	G_loss_tracking = []
-
-	dataset = pre_process(dataset)
-
-	minmax = False
-	minmax_switch = 0
-	epochs = 10000
-
-	print('Training GANs model...')
-	for epoch in range(epochs):
-		x = load_microstructure_batch(G,dataset)
-		train_switch(D,G)
-		#TODO: When I get the data, write the generate_batch code
-		D_x,D_y = generate_D_batch(G,x)
-		D_loss = D.train_on_batch(D_x,D_y,shuffle=True)
-			
-		train_switch(D,G)
-		G_x = x
-		G_y = np.vstack((np.ones(len(x)),np.zeros(len(x)))).T
-
-		if epoch == minmax_switch:
-			GAN.compile(optimizer=GAN.optimizer,loss=G_Max)
-			minmax = True
-
-		if minmax:
-			extend = np.vstack((np.zeros(len(x)),np.ones(len(x)))).T
-		else: #minmin
-			extend = np.vstack((np.ones(len(x)),np.zeros(len(x)))).T	
-		
-		G_y = np.vstack((G_y,extend))
-		G_loss = GAN.train_on_batch(G_x,G_y,shuffle=True)
-		
-		print('{}/{}'.format(epoch+1,epochs),end='\r')
-
-if __name__ == '__main__':
-	optimizer = 'adagrad'
-	D,G = discriminator(optimizer),generator(optimizer)
-	train_gan(D,G,folder)	
