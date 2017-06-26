@@ -21,6 +21,7 @@ def fuZqu(sym):
 
 ''' sym = xtal.Symmetry('Cubic') '''
 def load_quats(filename,symmetry):
+    print('Loading File...')
     fzQu = fuZqu(symmetry) #stage fundamental zone function by symmetry
     f = h5py.File(filename)
 
@@ -28,7 +29,9 @@ def load_quats(filename,symmetry):
     voxel_ids = f['DataContainers']['ImageDataContainer']['CellData']['ClusterIds']
     cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
     cluster_ids = f['DataContainers']['ImageDataContainer']['CellFeatureData']['ClusterIds']
+    print('Done.')
 
+    print('Reshaping Data...')
     voxel_quats,voxel_ids = np.array(voxel_quats,dtype='float32'),np.array(voxel_ids,dtype=int)
     cluster_quats,cluster_ids = np.array(cluster_quats,dtype='float32'),np.array(cluster_ids,dtype=int)
     shape = voxel_quats.shape
@@ -36,20 +39,25 @@ def load_quats(filename,symmetry):
     voxel_quats,voxel_ids = voxel_quats.reshape(-1,4),voxel_ids.reshape(-1,1)
     cluster_quats = cluster_quats.reshape(-1,4)
     voxel_quats,cluster_quats = np.roll(voxel_quats,-1,1),np.roll(cluster_quats,-1,1) #Footnote 1
-    
+    print('Done.')
+
+    print('Applying fundamental zone transformation...')
     cluster_quats = np.array(list(map(fzQu,cluster_quats)))
     cluster_quats = cluster_quats.reshape(-1,4)
+    print('Done.')
 
     columns = ['clusterId','w','x','y','z']
 
+    print('Merging features with voxel image...')
     voxel_dict = np.hstack((voxel_ids,voxel_quats))
     cluster_dict = np.hstack((cluster_ids,cluster_quats))
 
     voxels = pd.DataFrame(voxel_dict,columns=columns,index=list(voxel_ids.flatten()))
     clusters = pd.DataFrame(cluster_dict,columns=columns,index=list(cluster_ids.flatten()))
     voxels.update(clusters)
-    dataset = np.array(voxels.values[:,1:],dtype='float32')
-    
+    dataset = np.array(voxels.values[:,1:],dtype='float32').reshape(shape)
+    print('Done.')
+    print('Obtained Dataset of Shape {}'.format(dataset.shape))
     del voxel_quats
     del voxel_ids
     del cluster_quats
@@ -59,7 +67,7 @@ def load_quats(filename,symmetry):
     del voxels
     del clusters
     gc.collect()
-    return dataset.reshape(shape)
+    return dataset
 
 def get_cube_stats(dataset,custom_size=96):
     d = min(dataset.shape[0],dataset.shape[1],dataset.shape[2])

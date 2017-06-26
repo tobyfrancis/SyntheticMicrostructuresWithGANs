@@ -12,9 +12,7 @@ import crystallography as xtal
 @click.option('--epochs',default=1000000)
 @click.option('--anneal',default=False)
 def train(framework,filepath,symmetry,batch_size,training_method,epochs,anneal):
-    print('Loading Dataset...')
     dataset = load_quats(filepath,xtal.Symmetry(symmetry))
-    print('Done.')
     stats = get_cube_stats(dataset)
     load_batch = batch_loader(cube_stats)
     if framework.lower() == 'pytorch':
