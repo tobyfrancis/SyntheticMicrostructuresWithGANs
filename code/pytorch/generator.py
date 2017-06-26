@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from code.pytorch.layers import *
+
 class GeneratorInput(nn.Module):
     #Input a set of 6*6*6*4 noise feature maps
-    def __init__(self, outChans, elu):
+    def __init__(self, inChans, outChans, outChans, elu):
         super(GeneratorInput, self).__init__()
-        self.conv1 = nn.Conv3d(4, outChans, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv3d(inChans, outChans, kernel_size=3, padding=1)
         self.bn1 = ContBatchNorm3d(outChans)
         self.relu1 = ELUCons(elu, outChans)
 
@@ -49,7 +51,7 @@ class GeneratorOutput(nn.Module):
 class Generator(nn.Module):
     def __init__(self, elu=True, nll=False):
         super(Generator, self).__init__()
-        self.input = GeneratorInput(64, elu) #(a*a*a*64)
+        self.input = GeneratorInput(4, 64, elu) #(a*a*a*64)
         self.up_256 = ConvUp(64, 256, elu, dropout=True) #(2a*2a*2a*256)
         self.up_128 = ConvUp(256, 128, elu, dropout=True) #(4a*4a*4a*128)
         self.up_64 = ConvUp(128, 64, elu) #(8a*8a*8a*64)

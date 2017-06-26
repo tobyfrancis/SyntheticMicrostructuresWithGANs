@@ -61,7 +61,7 @@ def load_quats(filename,symmetry):
     gc.collect()
     return dataset.reshape(shape)
 
-def cube_stats(dataset,custom_size=96):
+def get_cube_stats(dataset,custom_size=96):
     d = min(dataset.shape[0],dataset.shape[1],dataset.shape[2])
     a = int(2*np.sqrt(d**2/12))
     if custom_size and custom_size <= a:
@@ -77,7 +77,8 @@ def cube_stats(dataset,custom_size=96):
     big_center = np.matrix([dataset.shape[0]/2,dataset.shape[1]/2,dataset.shape[2]/2]).reshape(3,1)
     return [shape,small_center,big_center,index_array]
 
-def random_rotated_cube(dataset,[shape,small_center,big_center,index_array]):
+def random_rotated_cube(dataset,cube_stats):
+    shape,small_center,big_center,index_array = cube_stats
     rotation_matrix = xtal.cu2om(xtal.randomOrientations(1))[0]
     dataset_shape = np.array([dataset.shape[0],dataset.shape[1],dataset.shape[2]])
     padding = 25
@@ -91,12 +92,13 @@ def random_rotated_cube(dataset,[shape,small_center,big_center,index_array]):
 
     return np.array(list(map(rot_func,index_array))).reshape(shape[0],shape[1],shape[2],4)
 
-def load_batch(dataset,batch_size,cube_stats):
-    shape = cube_stats[0]
-    batch = np.zeros(batch_size,shape[0],shape[1],shape[2],4)
-    for i in range(batch_size):
-        batch[i] = random_rotated_cube(dataset,cube_stats)
-    return batch
+def batch_loader(cube_stats):
+    def load_batch(dataset,batch_size,cube_stats):
+        shape = cube_stats[0]
+        batch = np.zeros(batch_size,shape[0],shape[1],shape[2],4)
+        for i in range(batch_size):
+            batch[i] = random_rotated_cube(dataset,cube_stats)
+        return batch
 
 ''' 
     Footnote 1:

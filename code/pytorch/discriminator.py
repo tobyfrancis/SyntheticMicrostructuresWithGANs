@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from code.pytorch.layers import *
+
 class DiscriminatorInput(nn.Module):
     def __init__(self, inChans, outChans, elu):
         super(DiscriminatorInput, self).__init__()
@@ -10,6 +12,7 @@ class DiscriminatorInput(nn.Module):
         self.relu = ELUCons(elu, outChans)
 
     def forward(self, x):
+        x = x.permute(0, 4, 1, 2, 3).contiguous()
         return self.relu(elf.bn(self.conv(x)))
 
 
