@@ -6,7 +6,7 @@ from pytorch.layers import *
 
 class GeneratorInput(nn.Module):
     #Input a set of 6*6*6*4 noise feature maps
-    def __init__(self, inChans, outChans, outChans, elu):
+    def __init__(self, inChans, outChans, elu):
         super(GeneratorInput, self).__init__()
         self.conv1 = nn.Conv3d(inChans, outChans, kernel_size=3, padding=1)
         self.bn1 = ContBatchNorm3d(outChans)
