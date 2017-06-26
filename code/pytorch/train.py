@@ -107,7 +107,7 @@ def boundary_train(dataset,load_batch,batch_size,epochs,anneal):
         reset_grad()
     return D,G
 
-def pytorch_train(dataset,load_batch,batch_size,train,epochs,anneal)
+def pytorch_train(dataset,load_batch,batch_size,train,epochs,anneal):
     with torch.cuda.device(1):
         if train.lower() == 'wasserstein':
             D,G = wasserstein_train(dataset,load_batch,batch_size,epochs,anneal)
