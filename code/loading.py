@@ -50,20 +50,25 @@ def load_quats(filename,symmetry):
 
     print('Merging features with voxel image...')
     voxel_dict = np.hstack((voxel_ids,voxel_quats))
+    del voxel_quats
+    del voxel_ids
+    gc.collect()
     cluster_dict = np.hstack((cluster_ids,cluster_quats))
+    del cluster_quats
+    del cluster_ids
+    gc.collect()
 
     voxels = pd.DataFrame(voxel_dict,columns=columns,index=list(voxel_ids.flatten()))
+    del voxel_dict
+    gc.collect()
     clusters = pd.DataFrame(cluster_dict,columns=columns,index=list(cluster_ids.flatten()))
+    del cluster_dict
+    gc.collect()
     voxels.update(clusters)
     dataset = np.array(voxels.values[:,1:],dtype='float32').reshape(shape)
     print('Done.')
     print('Obtained Dataset of Shape {}'.format(dataset.shape))
-    del voxel_quats
-    del voxel_ids
-    del cluster_quats
-    del cluster_ids
-    del voxel_dict
-    del cluster_dict
+    
     del voxels
     del clusters
     gc.collect()
