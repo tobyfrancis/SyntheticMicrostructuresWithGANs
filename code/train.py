@@ -1,5 +1,5 @@
-from code.loading import *
-from code.pytorch.train import *
+from loading import *
+from pytorch.train import *
 import click
 import crystallography as xtal
 

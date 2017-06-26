@@ -2,8 +2,8 @@
 ''' https://github.com/wiseodd/generative-models/blob/master/GAN/ '''
 import torch
 import torch.optim as optim
-from code.pytorch.generator import *
-from code.pytorch.discriminator import *
+from generator import *
+from discriminator import *
 
 def log(x):
     return torch.log(x + 1e-8)
