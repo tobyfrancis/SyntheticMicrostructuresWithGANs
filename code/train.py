@@ -12,13 +12,18 @@ import crystallography as xtal
 @click.option('--epochs',default=1000000)
 @click.option('--anneal',default=False)
 def train(framework,filepath,symmetry,batch_size,training_method,epochs,anneal):
+    print('Loading Dataset...')
     dataset = load_quats(filepath,xtal.Symmetry(symmetry))
+    print('Done.')
     stats = get_cube_stats(dataset)
     load_batch = batch_loader(cube_stats)
     if framework.lower() == 'pytorch':
-        pytorch_train(dataset,load_batch,batch_size=batch_size,train=training_method)
+        print('Training PyTorch model...')
+        pytorch_train(dataset,load_batch,batch_size,training_method,epochs,anneal)
+        print('Done.')
     elif framework.lower() == 'keras':
-        keras_train(dataset,load_batch,batch_size=batch_size,)
+        print('Training Keras model...')
+        keras_train(dataset,load_batch,batch_size,training_method,epochs,anneal)
     else:
         raise NameError('Framework unavailable: Please choose Keras or Pytorch.')
 
