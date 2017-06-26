@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from layers import *
+from pytorch.layers import *
 
 class GeneratorInput(nn.Module):
     #Input a set of 6*6*6*4 noise feature maps

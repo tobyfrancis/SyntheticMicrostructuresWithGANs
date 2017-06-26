@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from layers import *
+from pytorch.layers import *
 
 class DiscriminatorInput(nn.Module):
     def __init__(self, inChans, outChans, elu):
