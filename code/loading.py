@@ -19,59 +19,27 @@ def fuZqu(sym):
         return xtal.qu2do(fZquat)
     return fzQu
 
-''' sym = xtal.Symmetry('Cubic') '''
-def load_quats(filename,symmetry):
+def save_fzQu(filename,symmetry):
+	''' symmetry == xtal.Symmetry('Cubic') '''
+	fzQu = fuZqu(symmetry) #stage fzQu function with symmetry
+	f = h5py.File(filename,'r+')
+	cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
+	cluster_quats = np.array(cluster_quats,dtype='float32')
+	shape = cluster_quats.shape
+	cluster_quats = np.roll(cluster_quats,-1,1)
+	cluster_quats = np.array(list(map(fzQu,cluster_quats)))
+	cluster_quats = np.roll(cluster_quats.reshape(-1,4),1,-1)
+	cluster_quats = cluster_quats.reshape(shape)
+	del f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
+	f['DataContainers']['ImageDataContainer']['CellFeatureData'].create_dataset('AvgQuats',data=cluster_quats)
+	print('Done converting all quaternions into Fundamental Zone.')
+
+def load_quats(filename):
     print('Loading File...')
-    fzQu = fuZqu(symmetry) #stage fundamental zone function by symmetry
     f = h5py.File(filename)
 
-    voxel_quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
-    voxel_ids = f['DataContainers']['ImageDataContainer']['CellData']['ClusterIds']
-    cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
-    cluster_ids = f['DataContainers']['ImageDataContainer']['CellFeatureData']['ClusterIds']
-    print('Done.')
-
-    print('Reshaping Data...')
-    voxel_quats,voxel_ids = np.array(voxel_quats,dtype='float32'),np.array(voxel_ids,dtype=int)
-    cluster_quats,cluster_ids = np.array(cluster_quats,dtype='float32'),np.array(cluster_ids,dtype=int)
-    shape = voxel_quats.shape
-
-    voxel_quats,voxel_ids = voxel_quats.reshape(-1,4),voxel_ids.reshape(-1,1)
-    cluster_quats = cluster_quats.reshape(-1,4)
-    voxel_quats,cluster_quats = np.roll(voxel_quats,-1,1),np.roll(cluster_quats,-1,1) #Footnote 1
-    print('Done.')
-
-    print('Applying fundamental zone transformation...')
-    cluster_quats = np.array(list(map(fzQu,cluster_quats)))
-    cluster_quats = cluster_quats.reshape(-1,4)
-    print('Done.')
-
-    columns = ['clusterId','w','x','y','z']
-
-    print('Merging features with voxel image...')
-    voxel_dict = np.hstack((voxel_ids,voxel_quats))
-    del voxel_quats
-    gc.collect()
-    cluster_dict = np.hstack((cluster_ids,cluster_quats))
-    del cluster_quats
-    gc.collect()
-
-    voxels = pd.DataFrame(voxel_dict,columns=columns,index=list(voxel_ids.flatten()))
-    del voxel_ids
-    del voxel_dict
-    gc.collect()
-    clusters = pd.DataFrame(cluster_dict,columns=columns,index=list(cluster_ids.flatten()))
-    del cluster_ids
-    del cluster_dict
-    gc.collect()
-    voxels.update(clusters)
-    dataset = np.array(voxels.values[:,1:],dtype='float32').reshape(shape)
-    print('Done.')
-    print('Obtained Dataset of Shape {}'.format(dataset.shape))
-    
-    del voxels
-    del clusters
-    gc.collect()
+    dataset = f['DataContainers']['ImageDataContainer']['CellData']['ClusterQuats']
+    dataset = np.array(dataset,dtype='float32')
     return dataset
 
 def get_cube_stats(dataset,custom_size=96):
