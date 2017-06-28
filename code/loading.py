@@ -17,11 +17,12 @@ def fuZqu(sym):
         quat = xtal.do2qu(quat)
         fZquat = sym.fzQu(quat)
         return xtal.qu2do(fZquat)
+    
     return fzQu
 
 def save_fzQu(filename,symmetry):
-	''' symmetry == xtal.Symmetry('Cubic') '''
-    fzQu = fuZqu(symmetry) #stage fzQu function with symmetry
+    ''' symmetry == xtal.Symmetry('Cubic') '''
+    fzQu = fuZqu(symmetry) # stage fundamental zone conversion function with symmetry
     f = h5py.File(filename,'r+')
     cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
     cluster_quats = np.array(cluster_quats,dtype='float32')
@@ -36,28 +37,28 @@ def save_fzQu(filename,symmetry):
 
 def check_fzQu(f,symmetry):
     ''' symmetry == xtal.Symmetry('Cubic') '''
-	fzQu = fuZqu(symmetry)
-	cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
-	cluster_quats = np.array(cluster_quats,dtype='float32')
-	shape = cluster_quats.shape
-	cluster_quats = np.roll(cluster_quats,-1,1)
-	fund_quats = np.array(list(map(fzQu,cluster_quats)))
-	if not all(fund_quats == cluster_quats):
-		raise IndexError('The Quaternions were not in the fundamental zone!')
-	del fund_quats
-	del cluster_quats
-	gc.collect()
+    fzQu = fuZqu(symmetry) # staging fundamental zone conversion function with symmetry
+    cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
+    cluster_quats = np.array(cluster_quats,dtype='float32')
+    shape = cluster_quats.shape
+    cluster_quats = np.roll(cluster_quats,-1,1)
+    fund_quats = np.array(list(map(fzQu,cluster_quats)))
+    if not all(fund_quats == cluster_quats):
+        raise IndexError('The Quaternions were not in the fundamental zone!')
+    del fund_quats
+    del cluster_quats
+    gc.collect()
 
-	quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
-	quats = np.array(quats,dtype='float32').reshape(-1,4)
-	quats = np.roll(quats,-1,1)[np.random.choice(quats.shape[0], 500, replace=False), :]
-	fund_quats = np.array(list(map(fzQu,quats)))
-	if not all(fund_quats == quats):
-		raise IndexError('The Quaternions were not in the fundamental zone!')
-	del fund_quats
-	del cluster_quats
-	gc.collect()
-	return True
+    quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
+    quats = np.array(quats,dtype='float32').reshape(-1,4)
+    quats = np.roll(quats,-1,1)[np.random.choice(quats.shape[0], 500, replace=False), :]
+    fund_quats = np.array(list(map(fzQu,quats)))
+    if not all(fund_quats == quats):
+        raise IndexError('The Quaternions were not in the fundamental zone!')
+    del fund_quats
+    del cluster_quats
+    gc.collect()
+    return True
 
 def check_clustered(f):
     cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
