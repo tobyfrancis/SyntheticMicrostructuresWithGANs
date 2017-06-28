@@ -34,11 +34,48 @@ def save_fzQu(filename,symmetry):
 	f['DataContainers']['ImageDataContainer']['CellFeatureData'].create_dataset('AvgQuats',data=cluster_quats)
 	print('Done converting all quaternions into Fundamental Zone.')
 
-def load_quats(filename):
+def check_fzQu(f,symmetry):
+    ''' symmetry == xtal.Symmetry('Cubic') '''
+    fzQu = fuZqu(symmetry)
+    cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
+	cluster_quats = np.array(cluster_quats,dtype='float32')
+	shape = cluster_quats.shape
+	cluster_quats = np.roll(cluster_quats,-1,1)
+	fund_quats = np.array(list(map(fzQu,cluster_quats)))
+    if not all(fund_quats == cluster_quats):
+        raise IndexError('The Quaternions were not in the fundamental zone!')
+    del fund_quats
+    del cluster_quats
+    gc.collect()
+
+    quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
+    quats = np.array(quats,dtype='float32').reshape(-1,4)
+    quats = np.roll(quats,-1,1)[np.random.choice(quats.shape[0], 500, replace=False), :]
+    fund_quats = np.array(list(map(fzQu,quats)))
+    if not all(fund_quats == quats):
+        raise IndexError('The Quaternions were not in the fundamental zone!')
+    del fund_quats
+    del cluster_quats
+    gc.collect()
+    return True
+
+def check_clustered(f):
+    cluster_quats = f['DataContainers']['ImageDataContainer']['CellFeatureData']['AvgQuats']
+    cluster_quats = np.array(cluster_quats,dtype='float32')
+	
+    quats = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
+    quats = np.array(quats,dtype='float32').reshape(-1,4)
+    quats = quats[np.random.choice(quats.shape[0], 1000, replace=False), :]
+    if not all(quats in cluster_quats):
+        raise IndexError('The CellData Quaternions were not clustered.')
+    return True
+
+def load_quats(filename,symmetry):
     print('Loading File...')
     f = h5py.File(filename)
-
-    dataset = f['DataContainers']['ImageDataContainer']['CellData']['ClusterQuats']
+    check_fzQu(f,symmetry)
+    check_clustered(f)
+    dataset = f['DataContainers']['ImageDataContainer']['CellData']['Quats']
     dataset = np.array(dataset,dtype='float32')
     return dataset
 
